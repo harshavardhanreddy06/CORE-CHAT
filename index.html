@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Offline ChatGPT</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Highlight.js for syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- Marked.js for markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Add Tesseract.js for OCR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+  <script src="image-upload.js" type="module"></script>
+  <script src="pdf-upload.js" type="module"></script>
+  <script src="renderer.js" type="module"></script>
+</head>
+<body>
+  <!-- Sidebar for chat history -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h2>Chat History</h2>
+      <button id="new-chat">+ New Chat</button>
+    </div>
+    <div id="history-list">
+      <!-- Chat history items will appear here -->
+    </div>
+  </div>
+
+  <!-- Main chat area -->
+  <div id="main-content">
+    <div id="chat-container">
+      <!-- Chat messages will appear here -->
+    </div>
+    
+    <div id="image-preview"></div>
+    <div id="pdf-preview"></div>
+    <div id="input-area">
+      <input type="text" placeholder="Enter your message" id="input">
+      <button id="add-file" class="icon-button" title="Add image">+</button>
+      <button id="add-pdf" class="icon-button" title="Add PDF">++</button>
+      <button id="send">Send</button>
+    </div>
+  </div>
+
+  <!-- Message Templates (hidden) -->
+  <template id="user-message-template">
+    <div class="message user-message"></div>
+  </template>
+
+  <template id="assistant-message-template">
+    <div class="message assistant-message"></div>
+  </template>
+
+  <template id="error-message-template">
+    <div class="message error-message"></div>
+  </template>
+</body>
+</html>
