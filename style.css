@@ -8,72 +8,161 @@ body {
     background-color: #111827;
     font-family: 'Poppins', sans-serif;
     display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
 }
 
-/* Sidebar Styles */
-#sidebar {
-    width: 260px;
-    background-color: #1f2937;
-    border-right: 1px solid #374151;
+/* ── App Header ─────────────────────────────────────────────────────────────── */
+#app-header {
     display: flex;
-    flex-direction: column;
-    padding: 20px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background: linear-gradient(90deg, #1a2235 0%, #1f2937 100%);
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+    z-index: 10;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
 
-#sidebar-header {
-    margin-bottom: 20px;
+#header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-#sidebar-header h2 {
-    color: #f9fafb;
-    font-size: 18px;
-    margin-bottom: 15px;
+#brand-icon {
+    font-size: 22px;
+    color: #0078d4;
+    line-height: 1;
 }
 
-#new-chat {
-    width: 100%;
-    padding: 10px;
-    background-color: transparent;
-    border: 1px solid #4b5563;
-    border-radius: 8px;
-    color: #f9fafb;
+#brand-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #f0f4ff;
+    text-transform: uppercase;
+}
+
+/* ── Model Selector ─────────────────────────────────────────────────────────── */
+#model-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#model-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+#model-select-container {
+    display: flex;
+    align-items: center;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+#model-select-container:focus-within {
+    border-color: #0078d4;
+    box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
+}
+
+#model-select {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #e5e7eb;
     font-family: 'Poppins', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 12px 7px 14px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    outline: none;
+    min-width: 190px;
+    max-width: 280px;
 }
 
-#new-chat:hover {
-    background-color: #374151;
+#model-select option {
+    background-color: #1f2937;
+    color: #e5e7eb;
 }
 
-#history-list {
-    flex: 1;
-    overflow-y: auto;
-    color: #9ca3af;
+#refresh-models {
+    background: transparent;
+    border: none;
+    border-left: 1px solid #374151;
+    color: #6b7280;
+    font-size: 17px;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background 0.2s;
 }
 
-/* Main Content Styles */
+#refresh-models:hover {
+    color: #0078d4;
+    background: rgba(0,120,212,0.08);
+}
+
+/* Status dot */
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background-color 0.4s;
+}
+
+.status-dot.online  { background-color: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+.status-dot.offline { background-color: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+.status-dot.loading {
+    background-color: #f59e0b;
+    box-shadow: 0 0 6px rgba(245,158,11,0.5);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+.status-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    letter-spacing: 0.03em;
+    transition: color 0.3s;
+    white-space: nowrap;
+}
+
+/* ── Main Content ───────────────────────────────────────────────────────────── */
 #main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     background-color: #111827;
+    overflow: hidden;
 }
 
 #chat-container {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 24px;
     color: #f9fafb;
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-/* Message Styles */
+/* ── Message Styles ─────────────────────────────────────────────────────────── */
 .message {
     padding: 15px 20px;
     border-radius: 12px;
@@ -84,18 +173,12 @@ body {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .user-message {
-    background-color:#0078d4;
+    background-color: #0078d4;
     color: white;
     align-self: flex-end;
     margin-left: auto;
@@ -121,15 +204,11 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
-        opacity: 0.7;
-    }
-    50% {
-        opacity: 1;
-    }
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 1; }
 }
 
-/* Input Area Styles */
+/* ── Input Area ─────────────────────────────────────────────────────────────── */
 #input-area {
     padding: 20px;
     border-top: 1px solid #374151;
@@ -138,7 +217,6 @@ body {
     align-items: center;
 }
 
-/* Adjust button sizes for icons */
 #add-file,
 #add-pdf {
     width: 44px;
@@ -173,7 +251,7 @@ body {
     color: #9ca3af;
 }
 
-/* File Previews */
+/* ── File Previews ──────────────────────────────────────────────────────────── */
 #image-preview,
 #pdf-preview {
     padding: 0 20px;
@@ -181,7 +259,6 @@ body {
     display: none;
 }
 
-/* PDF Preview Styles */
 .pdf-preview-item {
     display: flex;
     align-items: center;
@@ -220,8 +297,7 @@ body {
     color: #f87171;
 }
 
-/* Image Preview */
-
+/* ── Image Preview ──────────────────────────────────────────────────────────── */
 .image-preview-item {
     position: relative;
     display: inline-block;
@@ -262,7 +338,7 @@ body {
     background-color: rgba(220, 38, 38, 0.8);
 }
 
-/* Icon button styles */
+/* ── Icon Buttons ───────────────────────────────────────────────────────────── */
 .icon-button {
     width: 50px;
     height: 50px;
@@ -282,7 +358,6 @@ body {
     background-color: rgba(248, 112, 1, 0.1);
 }
 
-/* Processing state for the add file button */
 .icon-button.processing {
     position: relative;
     color: transparent;
@@ -324,7 +399,7 @@ body {
     color: #111827;
 }
 
-/* Code Block Styles */
+/* ── Code Block Styles ──────────────────────────────────────────────────────── */
 .assistant-message pre {
     background-color: #0d1117;
     border: 1px solid #30363d;
@@ -355,23 +430,13 @@ body {
     color: #e5e7eb;
 }
 
-.assistant-message p {
-    margin: 8px 0;
-}
-
-.assistant-message ul, .assistant-message ol {
-    margin: 8px 0;
-    padding-left: 24px;
-}
-
-.assistant-message li {
-    margin: 4px 0;
-}
-
-.assistant-message h1, .assistant-message h2, .assistant-message h3 {
-    margin: 16px 0 8px 0;
-    color: #f9fafb;
-}
+.assistant-message p  { margin: 8px 0; }
+.assistant-message ul,
+.assistant-message ol  { margin: 8px 0; padding-left: 24px; }
+.assistant-message li  { margin: 4px 0; }
+.assistant-message h1,
+.assistant-message h2,
+.assistant-message h3  { margin: 16px 0 8px 0; color: #f9fafb; }
 
 .assistant-message blockquote {
     border-left: 3px solid #4b5563;

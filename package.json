@@ -1,11 +1,15 @@
 {
-    "name": "offline-chatgpt",
+    "name": "core-chat",
     "version": "1.0.0",
-    "description": "",
+    "description": "Offline AI chat powered by Ollama",
     "main": "electron/main.js",
     "scripts": {
         "start": "electron electron/main.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "electron-builder",
+        "build:mac": "electron-builder --mac",
+        "build:win": "electron-builder --win",
+        "build:linux": "electron-builder --linux"
     },
     "keywords": [],
     "author": "",
@@ -16,7 +20,69 @@
     },
     "devDependencies": {
         "electron": "^26.0.0",
+        "electron-builder": "^24.13.3",
         "electron-reload": "^2.0.0-alpha.1",
         "vite": "^5.0.0"
+    },
+    "build": {
+        "appId": "com.corechat.app",
+        "productName": "CORE CHAT",
+        "copyright": "Copyright © 2024",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "electron/**/*",
+            "index.html",
+            "style.css",
+            "renderer.js",
+            "codeBlockUtils.js",
+            "image-upload.js",
+            "pdf-upload.js",
+            "!node_modules/**/*",
+            "!dist/**/*",
+            "!.git/**/*"
+        ],
+        "mac": {
+            "category": "public.app-category.productivity",
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "icon": "assets/icon.icns"
+        },
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "icon": "assets/icon.ico"
+        },
+        "linux": {
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "icon": "assets/icon.png",
+            "category": "Utility"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true
+        }
     }
 }
