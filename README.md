@@ -1,73 +1,67 @@
-# Offline AI (CORE-CHAT)
+# CORE CHAT
 
-An offline, privacy-focused chat application built with Electron, powered by local LLMs via [Ollama](https://ollama.ai/). This application allows you to chat with AI models, extract text from images (OCR), and analyze PDF documents directly on your machine without sending data to the cloud.
+An elegant, privacy-focused desktop chat application built with Electron. It brings the ChatGPT-like experience entirely offline by using local Large Language Models (LLMs) via [Ollama](https://ollama.ai/).
 
-## Features
+Your data never leaves your machine.
 
-- **🔒 Fully Offline**: Powered by local LLMs using Ollama. No internet required for chat.
-- **💬 Familiar UI**: Clean, responsive chat interface with history support.
-- **🖼️ Image OCR**: Upload images to extract text using Tesseract.js.
-- **📄 PDF Analysis**: Upload and parse PDF content for the AI to analyze.
-- **🎨 Syntax Highlighting**: Automatic code highlighting for better readability.
+## ✨ Features
 
-## Prerequisites
+- **🔒 Fully Offline & Private**: Powered by local LLMs using Ollama. No internet required for chat, and absolutely zero telemetry or cloud syncing.
+- **💬 Modern UI/UX**: A clean, premium dark-themed interface modeled after ChatGPT. Features responsive design, message bubbles, and smooth animations.
+- **🧠 Conversation Memory**: Stateful chat history with a sliding window (keeps the last 20 exchanges) so the AI remembers context. Automatically resets when you switch models or start a "New Session".
+- **🤖 Dynamic Model Loading**: Automatically detects and lists all models installed in your local Ollama instance.
+- **🖼️ Image OCR**: Attach images directly to the chat! Extracts text locally using Tesseract.js and feeds it to the AI as context.
+- **📄 PDF Analysis**: Attach PDFs to parse their text content locally via PDF.js, allowing the AI to summarize or answer questions about your documents.
+- **🎨 Code Highlighting**: Automatic syntax highlighting for code blocks with one-click "Copy Code" functionality.
 
-Before running the application, ensure you have the following installed:
+## 🚀 Prerequisites
 
-1. **[Node.js](https://nodejs.org/)**: Required to run the Electron app.
-2. **[Ollama](https://ollama.ai/)**: The local LLM server.
+1. **[Node.js](https://nodejs.org/)**
+2. **[Ollama](https://ollama.ai/)**: The local LLM runner.
 
-## Installation & Setup
+## 🛠️ Installation & Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <your-repo-url>
-   cd CORE_CHAT-Git
+   cd CORE-CHAT
    ```
-
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
-
 3. **Prepare Ollama**
-   Start the Ollama application and pull the default model used by the app (`gemma2:2b`). You can change this in `renderer.js` if you prefer another model.
-   ```bash
-   ollama pull gemma2:2b
-   ```
-   *Make sure Ollama is running in the background (default port 11434).*
+   Make sure you have at least one model downloaded in Ollama. For example, to get Qwen 2.5 (3B):
 
+   ```bash
+   ollama run qwen2.5:3b
+   ```
 4. **Run the Application**
+
    ```bash
    npm start
    ```
 
-## Development
+   *Note: CORE CHAT will attempt to start the Ollama background service automatically if it is not already running.*
 
-The project structure is as follows:
+## 📦 Packaging for Distribution
 
-- `electron/main.js`: Main process entry point.
-- `renderer.js`: Handles frontend logic and Ollama API communication.
-- `index.html` & `style.css`: UI layout and styling.
-- `image-upload.js` & `pdf-upload.js`: Utility modules for file handling.
+You can build standalone executables for your operating system using `electron-builder`:
 
-To modify the LLM model, edit the `model` field in `renderer.js`:
-```javascript
-body: JSON.stringify({
-    model: 'mistral', // Change to your preferred model
-    prompt: fullMessage,
-    stream: true
-})
-```
+- **Mac (.dmg)**: `npm run dist:mac`
+- **Windows (.exe)**: `npm run dist:win`
+- **Linux (.AppImage)**: `npm run dist:linux`
+- **Auto-detect OS**: `npm run dist`
 
-## Git Workflow
+The built application will be placed in the `dist/` directory.
+*(Note: Builds are currently unsigned, so macOS/Windows may show a security prompt on first launch).*
 
-This project includes a `.gitignore` to exclude node modules and build artifacts. When contributing:
+## 🧩 Architecture
 
-1. Stage your changes: `git add .`
-2. Commit: `git commit -m "Description of changes"`
-3. Push: `git push origin main`
-
-## License
-
-ISC
+- **`electron/main.js`**: Main Electron process. Manages the window lifecycle and spawns the Ollama background daemon automatically.
+- **`renderer.js`**: Core frontend logic. Handles the UI state, conversation memory (`/api/chat`), and streaming responses from the Ollama API.
+- **`index.html` & `style.css`**: The structural layout and modern dark-theme styling system.
+- **`image-upload.js` & `pdf-upload.js`**: Modular components handling file attachments and local text extraction.
+- **`codeBlockUtils.js`**: Markdown parsing and syntax highlighting utilities.
