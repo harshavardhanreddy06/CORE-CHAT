@@ -1,143 +1,106 @@
 const { ipcRenderer } = require('electron');
 
 export function addCodeBlockHeader(pre, codeBlock, index) {
-    // Create header container
+    // Prevent double-adding
+    if (pre.querySelector('.code-block-header')) return;
+
+    // Detect language from class
+    const classes = Array.from(codeBlock.classList);
+    const langClass = classes.find(c => c.startsWith('language-'));
+    const lang = langClass ? langClass.replace('language-', '') : 'code';
+
+    // Build header
     const header = document.createElement('div');
     header.className = 'code-block-header';
-    header.style.display = 'flex';
-    header.style.justifyContent = 'space-between';
-    header.style.alignItems = 'center';
-    header.style.padding = '4px 8px';
-    header.style.background = '#2d2d2d';
-    header.style.borderRadius = '4px 4px 0 0';
-    header.style.color = '#fff';
-    header.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-    header.style.fontSize = '12px';
-    
-    // Add language label
-    const lang = codeBlock.className.split('-').pop() || 'code';
+
+    // Language label (lowercase, monospace)
     const langLabel = document.createElement('span');
+    langLabel.className = 'code-block-lang';
     langLabel.textContent = lang;
-    langLabel.style.textTransform = 'uppercase';
     header.appendChild(langLabel);
-    
-    // Create button container
-    const buttonContainer = document.createElement('div');
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.gap = '8px';
-    
-    // Create copy button
-    const copyButton = createButton('📋 Copy', 'Copy to clipboard');
-    
-    // Create save button
-    const saveButton = createButton('💾 Save', 'Save to file');
-    
-    // Add hover effects
-    setupButtonHover(copyButton);
-    setupButtonHover(saveButton);
-    
-    // Add click handlers
-    copyButton.onclick = (e) => handleCopyClick(e, codeBlock, copyButton);
-    saveButton.onclick = (e) => handleSaveClick(e, codeBlock, saveButton, lang, index);
-    
-    // Add buttons to container
-    buttonContainer.appendChild(copyButton);
-    buttonContainer.appendChild(saveButton);
-    header.appendChild(buttonContainer);
-    
-    // Insert header before the code block
-    pre.insertBefore(header, codeBlock);
-    
-    // Add some styling to the pre element
-    pre.style.position = 'relative';
-    pre.style.marginTop = '1.5em';
-    pre.style.borderRadius = '0 0 4px 4px';
-    
-    // Style the code block
-    codeBlock.style.display = 'block';
-    codeBlock.style.paddingTop = '1em';
-    codeBlock.style.borderRadius = '0 0 4px 4px';
+
+    // Right-side button group
+    const btnGroup = document.createElement('div');
+    btnGroup.style.display = 'flex';
+    btnGroup.style.gap = '4px';
+
+    // Copy button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-block-copy-btn';
+    copyBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy
+    `;
+    copyBtn.title = 'Copy to clipboard';
+    copyBtn.addEventListener('click', (e) => handleCopy(e, codeBlock, copyBtn));
+
+    // Save button
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'code-block-copy-btn';
+    saveBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save
+    `;
+    saveBtn.title = 'Save to file';
+    saveBtn.addEventListener('click', (e) => handleSave(e, codeBlock, saveBtn, lang, index));
+
+    btnGroup.appendChild(copyBtn);
+    btnGroup.appendChild(saveBtn);
+    header.appendChild(btnGroup);
+
+    // Insert header as first child of pre
+    pre.insertBefore(header, pre.firstChild);
+
+    // Ensure pre styling
+    pre.style.paddingTop = '0';
 }
 
-function createButton(icon, title) {
-    const button = document.createElement('button');
-    button.className = 'code-block-btn';
-    button.innerHTML = icon;
-    button.style.background = 'none';
-    button.style.border = '1px solid #666';
-    button.style.borderRadius = '4px';
-    button.style.color = '#fff';
-    button.style.padding = '2px 8px';
-    button.style.cursor = 'pointer';
-    button.style.fontSize = '12px';
-    button.style.display = 'flex';
-    button.style.alignItems = 'center';
-    button.style.gap = '4px';
-    button.title = title;
-    return button;
-}
-
-function setupButtonHover(button) {
-    button.onmouseenter = () => {
-        button.style.background = '#444';
-    };
-    
-    button.onmouseleave = () => {
-        button.style.background = 'none';
-    };
-}
-
-async function handleCopyClick(e, codeBlock, button) {
+async function handleCopy(e, codeBlock, btn) {
     e.stopPropagation();
     try {
         await navigator.clipboard.writeText(codeBlock.textContent);
-        const originalText = button.innerHTML;
-        button.innerHTML = ' Copied!';
+        const orig = btn.innerHTML;
+        btn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Copied!
+        `;
+        btn.style.color = '#6ee7b7';
         setTimeout(() => {
-            button.innerHTML = originalText;
+            btn.innerHTML = orig;
+            btn.style.color = '';
         }, 2000);
     } catch (err) {
-        console.error('Failed to copy:', err);
-        button.innerHTML = '❌ Error';
-        setTimeout(() => {
-            button.innerHTML = '📋 Copy';
-        }, 2000);
+        console.error('Copy failed:', err);
     }
 }
 
-async function handleSaveClick(e, codeBlock, button, lang, index) {
+async function handleSave(e, codeBlock, btn, lang, index) {
     e.stopPropagation();
     try {
         const code = codeBlock.textContent;
-        const defaultName = `${lang}_${index}`;
-        
-        // Send message to main process to show save dialog
         const result = await ipcRenderer.invoke('save-file-dialog', {
-            defaultPath: `${defaultName}.${lang}`,
-            filters: [
-                { name: 'All Files', extensions: ['*'] }
-            ]
+            defaultPath: `snippet_${index}.${lang}`,
+            filters: [{ name: 'All Files', extensions: ['*'] }]
         });
-        
         if (!result.canceled && result.filePath) {
-            // Send the file content and path to main process to save
-            await ipcRenderer.invoke('save-file', {
-                content: code,
-                filePath: result.filePath
-            });
-            
-            // Show success feedback
-            const originalText = button.innerHTML;
-            button.innerHTML = ' Saved!';
-            setTimeout(() => {
-                button.innerHTML = originalText;
-            }, 2000);
+            await ipcRenderer.invoke('save-file', { content: code, filePath: result.filePath });
+            const orig = btn.innerHTML;
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Saved!
+            `;
+            btn.style.color = '#6ee7b7';
+            setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
         }
     } catch (err) {
-        console.error('Error saving file:', err);
-        button.innerHTML = '❌ Error';
-        setTimeout(() => {
-            button.innerHTML = '💾 Save';
-        }, 2000);
+        console.error('Save failed:', err);
     }
 }

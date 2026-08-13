@@ -6,10 +6,10 @@
     "scripts": {
         "start": "electron electron/main.js",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "electron-builder",
-        "build:mac": "electron-builder --mac",
-        "build:win": "electron-builder --win",
-        "build:linux": "electron-builder --linux"
+        "dist": "electron-builder",
+        "dist:mac": "electron-builder --mac",
+        "dist:win": "electron-builder --win",
+        "dist:linux": "electron-builder --linux"
     },
     "keywords": [],
     "author": "",
@@ -48,35 +48,19 @@
             "target": [
                 {
                     "target": "dmg",
-                    "arch": [
-                        "x64",
-                        "arm64"
-                    ]
+                    "arch": ["x64", "arm64"]
                 }
-            ],
-            "icon": "assets/icon.icns"
+            ]
         },
         "win": {
             "target": [
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ],
-            "icon": "assets/icon.ico"
+                { "target": "nsis", "arch": ["x64"] }
+            ]
         },
         "linux": {
             "target": [
-                {
-                    "target": "AppImage",
-                    "arch": [
-                        "x64"
-                    ]
-                }
+                { "target": "AppImage", "arch": ["x64"] }
             ],
-            "icon": "assets/icon.png",
             "category": "Utility"
         },
         "nsis": {

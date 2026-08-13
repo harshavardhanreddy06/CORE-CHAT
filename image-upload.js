@@ -1,84 +1,90 @@
 // image-upload.js - Handles image upload and OCR functionality
 
-// Store OCR text in a variable
 let ocrText = '';
+let imageObjectURL = ''; // keep the URL so we can embed it in the message bubble
 
-// Function to handle file selection
 function handleFileSelect(event) {
     const file = event.target.files[0];
+    // Reset so same file can be re-selected
+    event.target.value = '';
     if (!file) return;
 
-    // Check if file is an image
     if (!file.type.match('image.*')) {
         alert('Please select an image file');
         return;
     }
 
-    // Show loading state
     const addFileBtn = document.getElementById('add-file');
     addFileBtn.disabled = true;
     addFileBtn.classList.add('processing');
 
-    // Create FormData and append the file
-    const formData = new FormData();
-    formData.append('file', file);
+    // Generate object URL immediately for preview
+    if (imageObjectURL) URL.revokeObjectURL(imageObjectURL);
+    imageObjectURL = URL.createObjectURL(file);
 
-    // Call OCR API (using Tesseract.js)
-    Tesseract.recognize(
-        file,
-        'eng', // Language code for English
-        { logger: m => console.log(m) } // Optional: log progress
-    ).then(({ data: { text } }) => {
-        // Store the extracted text
-        ocrText = text.trim();
-        console.log('Extracted text:', ocrText);
-        
-        // Create and display image preview
-        const preview = createImagePreview(file);
-        const previewContainer = document.getElementById('image-preview');
-        previewContainer.innerHTML = '';
-        previewContainer.appendChild(preview);
-        previewContainer.style.display = 'block';
-        
-        // Update input placeholder to show image is ready
-        document.getElementById('input').placeholder = 'Type your message...'; 
-    }).catch(err => {
-        console.error('OCR Error:', err);
-        alert('Error processing image. Please try another image.');
-    }).finally(() => {
-        // Reset button state
-        addFileBtn.disabled = false;
-        addFileBtn.classList.remove('processing');
-    });
+    // Show chip preview inside the input bar straight away
+    showImageChip(imageObjectURL, file.name);
+
+    Tesseract.recognize(file, 'eng', {})
+        .then(({ data: { text } }) => {
+            ocrText = text.trim();
+        })
+        .catch(err => {
+            console.error('OCR Error:', err);
+            ocrText = ''; // send without OCR text if it fails
+        })
+        .finally(() => {
+            addFileBtn.disabled = false;
+            addFileBtn.classList.remove('processing');
+        });
 }
 
-// Create image preview element
-function createImagePreview(file) {
-    const preview = document.createElement('div');
-    preview.className = 'image-preview-item';
-    
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    img.alt = 'Uploaded image';
-    
+function showImageChip(url, name) {
+    const container = document.getElementById('attachment-preview');
+    // Remove previous image chip if any
+    const old = container.querySelector('.attach-chip[data-type="image"]');
+    if (old) old.remove();
+
+    const chip = document.createElement('div');
+    chip.className = 'attach-chip';
+    chip.dataset.type = 'image';
+
+    const thumb = document.createElement('img');
+    thumb.src = url;
+    thumb.className = 'attach-chip-thumb';
+    thumb.alt = name;
+
+    const info = document.createElement('div');
+    info.className = 'attach-chip-info';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'attach-chip-name';
+    nameEl.textContent = name.length > 24 ? name.slice(0, 22) + '…' : name;
+
+    const typeEl = document.createElement('span');
+    typeEl.className = 'attach-chip-type';
+    typeEl.textContent = 'Image';
+
+    info.appendChild(nameEl);
+    info.appendChild(typeEl);
+
     const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-image';
-    removeBtn.innerHTML = '×';
+    removeBtn.className = 'attach-chip-remove';
+    removeBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
     removeBtn.onclick = () => {
-        preview.remove();
+        chip.remove();
         ocrText = '';
-        document.getElementById('input').placeholder = 'Enter your message';
-        if (!document.querySelector('.image-preview-item')) {
-            document.getElementById('image-preview').style.display = 'none';
-        }
+        if (imageObjectURL) { URL.revokeObjectURL(imageObjectURL); imageObjectURL = ''; }
+        hideAttachmentPreview();
     };
-    
-    preview.appendChild(img);
-    preview.appendChild(removeBtn);
-    return preview;
+
+    chip.appendChild(thumb);
+    chip.appendChild(info);
+    chip.appendChild(removeBtn);
+    container.appendChild(chip);
+    container.style.display = 'flex';
 }
 
-// Initialize the file input
 document.addEventListener('DOMContentLoaded', () => {
     const addFileBtn = document.getElementById('add-file');
     const fileInput = document.createElement('input');
@@ -87,26 +93,27 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
 
-    // Handle plus button click
-    addFileBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // Handle file selection
+    addFileBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleFileSelect);
 });
 
-// Function to get the OCR text (to be called when sending the message)
-function getOcrText() {
-    return ocrText;
+function hideAttachmentPreview() {
+    const container = document.getElementById('attachment-preview');
+    if (container && !container.hasChildNodes()) {
+        container.style.display = 'none';
+    }
 }
 
-// Function to clear the OCR text (after sending)
-function clearOcrText() {
+export function getOcrText() { return ocrText; }
+export function getImageURL() { return imageObjectURL; }
+
+export function clearOcrText() {
     ocrText = '';
-    const previewContainer = document.getElementById('image-preview');
-    previewContainer.innerHTML = '';
-    previewContainer.style.display = 'none';
+    imageObjectURL = '';
+    const container = document.getElementById('attachment-preview');
+    if (container) {
+        const chip = container.querySelector('.attach-chip[data-type="image"]');
+        if (chip) chip.remove();
+        if (!container.hasChildNodes()) container.style.display = 'none';
+    }
 }
-
-export { getOcrText, clearOcrText };

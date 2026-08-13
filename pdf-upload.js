@@ -1,93 +1,53 @@
-// pdf-upload.js - Handles PDF upload and text extraction with OCR support
+// pdf-upload.js - Handles PDF upload and text extraction
 
-// Store extracted text in a variable
 let pdfText = '';
+let pdfFileName = '';
 
-// Initialize PDF.js worker
 const pdfjsLib = window.pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// Function to convert PDF page to image
 async function pageToImage(page) {
     const viewport = page.getViewport({ scale: 2.0 });
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.height = viewport.height;
     canvas.width = viewport.width;
-
-    await page.render({
-        canvasContext: context,
-        viewport: viewport
-    }).promise;
-
-    return {
-        imageData: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height
-    };
+    await page.render({ canvasContext: context, viewport }).promise;
+    return { imageData: canvas.toDataURL('image/png') };
 }
 
-// Function to extract text from image using Tesseract
 async function extractTextFromImage(imageData) {
     try {
-        const { data: { text } } = await Tesseract.recognize(
-            imageData,
-            'eng',
-            { 
-                logger: m => console.log(m),
-                // Optimize for document text recognition
-                tessedit_pageseg_mode: 6, // Assume a single uniform block of text
-                tessedit_ocr_engine_mode: 3, // Default OCR engine mode with LSTM
-                preserve_interword_spaces: '1' // Preserve spaces between words
-            }
-        );
+        const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {});
         return text.trim();
-    } catch (error) {
-        console.error('Tesseract error:', error);
+    } catch {
         return '';
     }
 }
 
-// Function to extract text from PDF
 async function extractTextFromPdf(file) {
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
-        
-        // Try to extract text directly first
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            
-            if (textContent.items.length > 0) {
-                // If text is selectable, use it directly
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '\n\n';
-            } else {
-                // If no selectable text, use OCR on the page image
-                console.log(`Page ${i} has no selectable text, using OCR...`);
-                const { imageData } = await pageToImage(page);
-                const ocrText = await extractTextFromImage(imageData);
-                if (ocrText) {
-                    fullText += ocrText + '\n\n';
-                }
-            }
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        if (textContent.items.length > 0) {
+            fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+        } else {
+            const { imageData } = await pageToImage(page);
+            const ocr = await extractTextFromImage(imageData);
+            if (ocr) fullText += ocr + '\n\n';
         }
-        
-        return fullText.trim() || 'No text could be extracted from the PDF';
-    } catch (error) {
-        console.error('Error processing PDF:', error);
-        throw new Error('Failed to process PDF. The file might be corrupted or password protected.');
     }
+    return fullText.trim() || 'No text could be extracted from the PDF';
 }
 
-// Function to handle file selection
 async function handlePdfSelect(event) {
     const file = event.target.files[0];
+    event.target.value = '';
     if (!file) return;
 
-    // Check if file is a PDF
     if (!file.type.match('application/pdf') && !file.name.endsWith('.pdf')) {
         alert('Please select a PDF file');
         return;
@@ -97,67 +57,80 @@ async function handlePdfSelect(event) {
     addPdfBtn.disabled = true;
     addPdfBtn.classList.add('processing');
 
+    // Show chip immediately with a loading state
+    pdfFileName = file.name;
+    showPdfChip(file.name, true);
+
     try {
-        // Extract text from PDF
         const extractedText = await extractTextFromPdf(file);
         pdfText = extractedText;
-        
-        // Create and display PDF preview
-        const preview = createPdfPreview(file);
-        const previewContainer = document.getElementById('pdf-preview');
-        previewContainer.innerHTML = '';
-        previewContainer.appendChild(preview);
-        previewContainer.style.display = 'block';
-        
-        // Update input placeholder
-        document.getElementById('input').placeholder = 'Type your message...';
-        // Update input placeholder if text was extracted
-        if (pdfText && pdfText !== 'No text could be extracted from the PDF') {
-            document.getElementById('input').placeholder = 'Type your message... ';
-        } else {
-            alert('No text could be extracted from the PDF. Please try another file.');
+        // Update chip to loaded state
+        showPdfChip(file.name, false);
+
+        if (!pdfText || pdfText === 'No text could be extracted from the PDF') {
+            alert('No text could be extracted from this PDF.');
         }
     } catch (error) {
         console.error('PDF Processing Error:', error);
         alert(error.message || 'Error processing PDF. Please try another file.');
+        removePdfChip();
     } finally {
         addPdfBtn.disabled = false;
         addPdfBtn.classList.remove('processing');
     }
 }
 
-// Create PDF preview element
-function createPdfPreview(file) {
-    const preview = document.createElement('div');
-    preview.className = 'pdf-preview-item';
-    
-    const icon = document.createElement('div');
-    icon.className = 'pdf-icon';
-    icon.innerHTML = '📄';
-    
-    const fileName = document.createElement('span');
-    fileName.className = 'file-name';
-    fileName.textContent = file.name;
-    
+function showPdfChip(name, loading = false) {
+    const container = document.getElementById('attachment-preview');
+    const old = container.querySelector('.attach-chip[data-type="pdf"]');
+    if (old) old.remove();
+
+    const chip = document.createElement('div');
+    chip.className = 'attach-chip';
+    chip.dataset.type = 'pdf';
+
+    // PDF icon
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'attach-chip-pdf-icon';
+    iconWrap.innerHTML = loading
+        ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></circle></svg>`
+        : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><text x="6" y="20" font-size="5" fill="#ff6b6b" stroke="none" font-weight="bold">PDF</text></svg>`;
+
+    const info = document.createElement('div');
+    info.className = 'attach-chip-info';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'attach-chip-name';
+    nameEl.textContent = name.length > 26 ? name.slice(0, 24) + '…' : name;
+
+    const typeEl = document.createElement('span');
+    typeEl.className = 'attach-chip-type';
+    typeEl.textContent = loading ? 'Extracting text…' : 'PDF Document';
+
+    info.appendChild(nameEl);
+    info.appendChild(typeEl);
+
     const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-pdf';
-    removeBtn.innerHTML = '×';
-    removeBtn.onclick = () => {
-        preview.remove();
-        pdfText = '';
-        document.getElementById('input').placeholder = 'Enter your message';
-        if (!document.querySelector('.pdf-preview-item')) {
-            document.getElementById('pdf-preview').style.display = 'none';
-        }
-    };
-    
-    preview.appendChild(icon);
-    preview.appendChild(fileName);
-    preview.appendChild(removeBtn);
-    return preview;
+    removeBtn.className = 'attach-chip-remove';
+    removeBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    removeBtn.onclick = removePdfChip;
+
+    chip.appendChild(iconWrap);
+    chip.appendChild(info);
+    chip.appendChild(removeBtn);
+    container.appendChild(chip);
+    container.style.display = 'flex';
 }
 
-// Initialize the PDF file input
+function removePdfChip() {
+    pdfText = '';
+    pdfFileName = '';
+    const container = document.getElementById('attachment-preview');
+    const chip = container && container.querySelector('.attach-chip[data-type="pdf"]');
+    if (chip) chip.remove();
+    if (container && !container.hasChildNodes()) container.style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const addPdfBtn = document.getElementById('add-pdf');
     const fileInput = document.createElement('input');
@@ -166,26 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
 
-    // Handle PDF button click
-    addPdfBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // Handle file selection
+    addPdfBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handlePdfSelect);
 });
 
-// Function to get the extracted PDF text
-function getPdfText() {
-    return pdfText;
-}
+export function getPdfText() { return pdfText; }
+export function getPdfFileName() { return pdfFileName; }
 
-// Function to clear the PDF text
-function clearPdfText() {
-    pdfText = '';
-    const previewContainer = document.getElementById('pdf-preview');
-    previewContainer.innerHTML = '';
-    previewContainer.style.display = 'none';
+export function clearPdfText() {
+    removePdfChip();
 }
-
-export { getPdfText, clearPdfText };
